@@ -19,7 +19,12 @@ mod private {
     impl Sealed for crate::MetaData {}
     impl Sealed for crate::PageData {}
     impl Sealed for crate::Page {}
+    impl Sealed for crate::Template {}
 }
+
+mod template;
+pub(crate) use template::Template;
+pub use template::TemplateError;
 
 pub trait TryLoad: Sized + private::Sealed {
     type Error: std::error::Error;

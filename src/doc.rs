@@ -1,3 +1,5 @@
+use std::path::{Path, PathBuf};
+
 use crate::{ContentData, Layout, MetaData, Page, PageData, TryLoad};
 
 use thiserror::Error;
@@ -21,6 +23,14 @@ pub struct Document {
     pub(crate) name: String,
     pub(crate) pages: Vec<(Page, String)>,
     pub(crate) orientation: Layout,
+    pub(crate) template_dir: Option<PathBuf>,
+}
+
+impl Document {
+    pub fn with_template_dir<P: AsRef<Path>>(&mut self, path: P) -> &mut Self {
+        self.template_dir = Some(PathBuf::from(path.as_ref()));
+        self
+    }
 }
 
 impl TryLoad for Document {
@@ -46,6 +56,7 @@ impl TryLoad for Document {
             name: mdata.visibleName,
             orientation: cdata.orientation,
             pages: contents?,
+            template_dir: None,
         })
     }
 }

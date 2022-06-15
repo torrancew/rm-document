@@ -1,11 +1,12 @@
 use crate::{
     rm::{self, Parse},
-    TryLoad,
+    Template, TemplateError, TryLoad,
 };
 
 use std::{
     fs,
     io::{self, Read},
+    path,
 };
 
 use thiserror::Error;
@@ -20,7 +21,18 @@ pub enum PageError {
 
 #[derive(Debug)]
 pub(crate) struct Page {
+    pub(crate) template: Option<Template>,
     pub(crate) inner: rm::Page,
+}
+
+impl Page {
+    pub(crate) fn with_template<P: AsRef<path::Path>>(
+        &mut self,
+        path: P,
+    ) -> Result<&mut Self, TemplateError> {
+        self.template = Some(Template::try_load(path)?);
+        Ok(self)
+    }
 }
 
 impl TryLoad for Page {
@@ -31,6 +43,9 @@ impl TryLoad for Page {
         fs::File::open(path)?.read_to_end(&mut bytes)?;
         rm::Page::parse(&bytes)
             .map_err(|e| PageError::Parse(e.to_string()))
-            .map(|(_, page)| Self { inner: page })
+            .map(|(_, page)| Self {
+                template: None,
+                inner: page,
+            })
     }
 }
