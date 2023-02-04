@@ -19,7 +19,7 @@ pub enum PageError {
     Parse(String),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct Page {
     pub(crate) template: Option<Template>,
     pub(crate) inner: rm::Page,

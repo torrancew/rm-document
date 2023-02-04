@@ -64,6 +64,7 @@ pub enum MetaDataError {
 #[allow(non_snake_case)]
 #[derive(Deserialize)]
 pub(crate) struct MetaData {
+    pub(crate) parent: Option<String>,
     pub(crate) visibleName: String,
 }
 

@@ -12,7 +12,7 @@ use thiserror::Error;
 #[error("Unable to load template at {0}")]
 pub struct TemplateError(PathBuf);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct Template(String);
 
 impl AsRef<str> for Template {

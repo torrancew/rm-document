@@ -1,7 +1,7 @@
 pub(crate) use rm_lines as rm;
 
 mod doc;
-pub use doc::Document;
+pub use doc::{Collection, CollectionError, Document, DocumentError, Entry, EntryError};
 
 mod meta;
 pub(crate) use meta::*;
@@ -14,8 +14,10 @@ mod pdf;
 mod private {
     pub trait Sealed {}
 
-    impl Sealed for crate::Document {}
+    impl Sealed for crate::Collection {}
     impl Sealed for crate::ContentData {}
+    impl Sealed for crate::Document {}
+    impl Sealed for crate::Entry {}
     impl Sealed for crate::MetaData {}
     impl Sealed for crate::PageData {}
     impl Sealed for crate::Page {}

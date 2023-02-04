@@ -13,30 +13,32 @@ pub enum RenderError {
     CorruptTemplate(#[from] pdf::svg::SvgParseError),
 }
 
-#[allow(clippy::from_over_into)]
 impl Document {
     pub fn render_pdf(&mut self) -> Result<pdf::PdfDocumentReference, RenderError> {
         let layout = self.orientation;
         let (width, height): (f64, f64) = layout.into();
         let (width, height) = (pdf::Pt(width).into(), pdf::Pt(height).into());
-        let (doc, p, l) = pdf::PdfDocument::new(&self.name, width, height, "Template");
 
-        let mut pages = self.pages.iter_mut();
-        if let Some((page, template)) = pages.next() {
+        let render_fn = |(page, template): (&mut Page, &mut String), page_ref, tpl_layer| {
             if let Some(dir) = &self.template_dir {
                 page.with_template(dir.join(template).with_extension("svg"))?;
             }
-            page.render_into((doc.get_page(p), doc.get_page(p).get_layer(l)), layout)?;
+            page.render_into((page_ref, tpl_layer), layout)
+        };
 
-            pages
-                .map(|(page, template)| {
-                    let (p, l) = doc.add_page(width, height, "Template");
-                    if let Some(dir) = &self.template_dir {
-                        page.with_template(dir.join(template).with_extension("svg"))?;
-                    }
-                    page.render_into((doc.get_page(p), doc.get_page(p).get_layer(l)), layout)
-                })
-                .collect::<Result<Vec<_>, RenderError>>()?;
+        let (doc, page_idx, layer_idx) =
+            pdf::PdfDocument::new(&self.name, width, height, "Template");
+
+        for (count, (page, template)) in self.pages.iter_mut().enumerate() {
+            let (page_idx, layer_idx) = match count {
+                x if x == 0 => (page_idx, layer_idx),
+                _ => doc.add_page(width, height, "Template"),
+            };
+
+            let page_ref = doc.get_page(page_idx);
+            let tpl_layer = page_ref.get_layer(layer_idx);
+
+            render_fn((page, template), page_ref, tpl_layer)?;
         }
 
         Ok(doc)
@@ -70,13 +72,16 @@ impl RenderInto for Template {
     type Container = pdf::PdfLayerReference;
     type Error = RenderError;
 
-    fn render_into(&self, container: Self::Container, _: Layout) -> Result<(), Self::Error> {
+    fn render_into(&self, container: Self::Container, layout: Layout) -> Result<(), Self::Error> {
+        let (width, height) = layout.into();
+        let img = printpdf::svg::Svg::parse(self.as_ref())?;
         let xform = pdf::svg::SvgTransform {
-            scale_x: Some(3.),
-            scale_y: Some(3.),
+            scale_x: Some(width / img.width.into_pt(300.).0),
+            scale_y: Some(height / img.height.into_pt(300.).0),
             ..Default::default()
         };
-        printpdf::svg::Svg::parse(self.as_ref())?.add_to_layer(&container, xform);
+
+        img.add_to_layer(&container, xform);
         Ok(())
     }
 }
